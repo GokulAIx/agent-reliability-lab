@@ -104,6 +104,8 @@
         </div>
         <div class="cart" aria-label="Shopping cart">Cart: <span id="cart-count">0</span></div>
       </header>
+      <p id="session-status">Session: active</p>
+      <button type="button" id="sign-in" hidden>Sign in</button>
       <section class="products" aria-label="Laptop products">
         <article class="product" data-product-id="thinkpad-x1" data-price="72999">
           <h2>ThinkPad X1</h2>
@@ -128,7 +130,17 @@
       const status = document.querySelector('[role="status"]');
       const cartCount = document.querySelector("#cart-count");
       const store = document.querySelector("#store");
+      const sessionStatus = document.querySelector("#session-status");
+      const signIn = document.querySelector("#sign-in");
       const cart = [];
+      window.__SESSION_VALID__ = true;
+
+      signIn.addEventListener("click", () => {
+        window.__SESSION_VALID__ = true;
+        sessionStatus.textContent = "Session: active";
+        signIn.hidden = true;
+        status.textContent = "Signed in. Please retry your last action.";
+      });
 
       buttons.forEach((button) => {
         button.addEventListener("click", async () => {
@@ -136,6 +148,7 @@
           const product = card.querySelector("h2").textContent;
           const productId = card.dataset.productId;
           try {
+            if (!window.__SESSION_VALID__) throw new Error("session expired");
             const response = await fetch(`/cart-result.json?product=${productId}`);
             if (!response.ok) throw new Error("cart request failed");
             const result = await response.json();
@@ -151,7 +164,13 @@
             cartCount.textContent = quantity;
             status.textContent = `${product} added to cart`;
           } catch (error) {
-            status.textContent = "Cart update failed. Please retry.";
+            if (!window.__SESSION_VALID__) {
+              sessionStatus.textContent = "Session: expired";
+              signIn.hidden = false;
+              status.textContent = "Session expired. Please sign in.";
+            } else {
+              status.textContent = "Cart update failed. Please retry.";
+            }
           }
         });
       });

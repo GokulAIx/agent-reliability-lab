@@ -56,7 +56,25 @@ $env:CHAOS_SCENARIO = "ui_mutation"
 .venv\Scripts\python.exe -m app.experiment
 ```
 
+Run a one-time network failure against the cart request:
+
+```powershell
+$env:CHAOS_SCENARIO = "network_failure"
+.venv\Scripts\python.exe -m app.experiment
+```
+
+Expire the session before the agent acts:
+
+```powershell
+$env:CHAOS_SCENARIO = "session_expiration"
+.venv\Scripts\python.exe -m app.experiment
+```
+
 The report compares the agent claim with independent application state and classifies the run as `SUCCESS`, `RECOVERED`, `FAILURE`, `FALSE SUCCESS`, or `UNCERTAIN`.
+
+The experiment runner targets the `AgentAdapter` contract. The included Gemini/LangGraph implementation is the reference adapter used by the demo; the reliability layer is designed to test other agents through the same boundary.
+
+Experiment reports can be persisted in SQLite by setting `RUN_DB_PATH` (the FastAPI experiment endpoint defaults to `data/runs.db`). The stored report includes the classification, agent claim, verifier result, and event evidence.
 
 To run the FastAPI entry point:
 
