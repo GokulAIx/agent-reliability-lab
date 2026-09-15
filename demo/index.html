@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Solari Demo Store</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Georgia, "Times New Roman", serif;
+        background: #f4efe6;
+        color: #1f2933;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+      }
+
+      main {
+        width: min(36rem, calc(100% - 2rem));
+        padding: 3rem;
+        border: 1px solid #c9bda9;
+        background: #fffdf8;
+        box-shadow: 0.75rem 0.75rem 0 #d9cdbb;
+      }
+
+      h1 {
+        margin-top: 0;
+        font-size: 2.5rem;
+      }
+
+      .price {
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+
+      button {
+        padding: 0.75rem 1rem;
+        border: 0;
+        background: #c8553d;
+        color: white;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #a94232;
+      }
+
+      [role="status"] {
+        min-height: 1.5rem;
+        margin-top: 1.5rem;
+        color: #315c45;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>Phase 1 browser target</p>
+      <h1>Solari Demo Store</h1>
+      <p>ThinkPad X1</p>
+      <p class="price">₹72,999</p>
+      <button type="button" id="add-to-cart">Add to cart</button>
+      <p role="status" aria-live="polite"></p>
+    </main>
+    <script>
+      const button = document.querySelector("#add-to-cart");
+      const status = document.querySelector('[role="status"]');
+
+      button.addEventListener("click", () => {
+        status.textContent = "ThinkPad X1 added to cart";
+      });
+    </script>
+  </body>
+</html>
