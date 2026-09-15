@@ -20,8 +20,8 @@
       }
 
       main {
-        width: min(36rem, calc(100% - 2rem));
-        padding: 3rem;
+        width: min(54rem, calc(100% - 2rem));
+        padding: 2.5rem;
         border: 1px solid #c9bda9;
         background: #fffdf8;
         box-shadow: 0.75rem 0.75rem 0 #d9cdbb;
@@ -32,8 +32,40 @@
         font-size: 2.5rem;
       }
 
+      header {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .cart {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #c9bda9;
+        color: #315c45;
+        white-space: nowrap;
+      }
+
+      .products {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+
+      .product {
+        padding: 1.25rem;
+        border: 1px solid #d9cdbb;
+        background: #f9f5ed;
+      }
+
+      .product h2 {
+        margin: 0 0 0.5rem;
+        font-size: 1.25rem;
+      }
+
       .price {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
         font-weight: bold;
       }
 
@@ -50,6 +82,11 @@
         background: #a94232;
       }
 
+      button:disabled {
+        background: #8c857b;
+        cursor: not-allowed;
+      }
+
       [role="status"] {
         min-height: 1.5rem;
         margin-top: 1.5rem;
@@ -59,19 +96,53 @@
   </head>
   <body>
     <main>
-      <p>Phase 1 browser target</p>
-      <h1>Solari Demo Store</h1>
-      <p>ThinkPad X1</p>
-      <p class="price">₹72,999</p>
-      <button type="button" id="add-to-cart">Add to cart</button>
+      <header>
+        <div>
+          <p>Agent Reliability Lab target</p>
+          <h1>Solari Demo Store</h1>
+          <p>Find the cheapest laptop under ₹80,000.</p>
+        </div>
+        <div class="cart" aria-label="Shopping cart">Cart: <span id="cart-count">0</span></div>
+      </header>
+      <section class="products" aria-label="Laptop products">
+        <article class="product" data-product-id="thinkpad-x1" data-price="72999">
+          <h2>ThinkPad X1</h2>
+          <p class="price">₹72,999</p>
+          <button type="button" id="add-to-cart">Add to cart</button>
+        </article>
+        <article class="product" data-product-id="dell-xps" data-price="84999">
+          <h2>Dell XPS 13</h2>
+          <p class="price">₹84,999</p>
+          <button type="button">Add to cart</button>
+        </article>
+        <article class="product" data-product-id="macbook-air" data-price="89999">
+          <h2>MacBook Air</h2>
+          <p class="price">₹89,999</p>
+          <button type="button">Add to cart</button>
+        </article>
+      </section>
       <p role="status" aria-live="polite"></p>
     </main>
     <script>
-      const button = document.querySelector("#add-to-cart");
+      const buttons = document.querySelectorAll(".product button");
       const status = document.querySelector('[role="status"]');
+      const cartCount = document.querySelector("#cart-count");
+      window.__APP_STATE__ = { cart: [] };
 
-      button.addEventListener("click", () => {
-        status.textContent = "ThinkPad X1 added to cart";
+      buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const card = button.closest(".product");
+          const product = card.querySelector("h2").textContent;
+          const productId = card.dataset.productId;
+          const existing = window.__APP_STATE__.cart.find((item) => item.productId === productId);
+          if (existing) {
+            existing.quantity += 1;
+          } else {
+            window.__APP_STATE__.cart.push({ productId, product, quantity: 1 });
+          }
+          cartCount.textContent = window.__APP_STATE__.cart.reduce((total, item) => total + item.quantity, 0);
+          status.textContent = `${product} added to cart`;
+        });
       });
     </script>
   </body>
