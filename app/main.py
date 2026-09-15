@@ -1,29 +1,61 @@
 """Minimal FastAPI entry point for an agent run."""
 
+import asyncio
 import os
+import sys
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from dotenv import load_dotenv
 from pydantic import BaseModel
+from starlette.requests import Request
 from solari_browser import Solari
 
-from .adapters import LangGraphReferenceAdapter
+from .adapters import AgentContext, configured_agent
 from .experiment import run_experiment
-from .storage import get_report
+from .storage import get_report, list_reports
+
+if sys.platform == "win32" and hasattr(asyncio, "WindowsProactorEventLoopPolicy"):
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
+load_dotenv()
 
 app = FastAPI(title="Agent Reliability Lab")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+templates = Jinja2Templates(directory="app/templates")
 
 
 class RunRequest(BaseModel):
     task: str
+    target_url: str | None = None
 
 
 class ExperimentRequest(BaseModel):
     scenario: str = "none"
+    target_url: str | None = None
 
 
 def database_path() -> str:
     return os.environ.get("RUN_DB_PATH", "data/runs.db")
+
+
+@app.get("/")
+async def dashboard(request: Request):
+    reports = list_reports(database_path())
+    latest_by_scenario = {}
+    for report in reports:
+        latest_by_scenario.setdefault(report["scenario"], report["classification"])
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={
+            "reports": reports,
+            "latest_by_scenario": latest_by_scenario,
+            "config_target_url": os.environ.get("DEMO_URL", ""),
+        },
+    )
 
 
 @app.post("/runs")
@@ -39,10 +71,10 @@ async def create_run(request: RunRequest) -> dict[str, object]:
             async with await solari.launch() as browser:
                 page = await browser.new_page()
                 await page.goto(demo_url, wait_until="domcontentloaded")
-                result = await LangGraphReferenceAdapter(
+                result = await configured_agent(
                     model=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"),
                     max_steps=int(os.environ.get("MAX_STEPS", "12")),
-                ).run(request.task, page)
+                ).run(AgentContext(request.task, page, browser.cdp_endpoint, demo_url))
                 return {
                     "status": result.status,
                     "message": result.message,
@@ -57,7 +89,7 @@ async def create_run(request: RunRequest) -> dict[str, object]:
 async def create_experiment(request: ExperimentRequest) -> dict[str, object]:
     os.environ["RUN_DB_PATH"] = database_path()
     try:
-        return await run_experiment(request.scenario)
+        return await run_experiment(request.scenario, target_url=request.target_url)
     except Exception as error:
         raise HTTPException(status_code=502, detail=f"Experiment failed: {error}") from error
 

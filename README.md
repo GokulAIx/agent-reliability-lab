@@ -74,12 +74,38 @@ The report compares the agent claim with independent application state and class
 
 The experiment runner targets the `AgentAdapter` contract. The included Gemini/LangGraph implementation is the reference adapter used by the demo; the reliability layer is designed to test other agents through the same boundary.
 
+### Connect a customer agent
+
+The lab can call a customer-owned agent service instead of the reference agent. Configure this on the server only:
+
+```env
+AGENT_ADAPTER=http
+CUSTOM_AGENT_URL=https://customer-agent.example.com/agent/run
+CUSTOM_AGENT_TOKEN=server_only_shared_secret
+```
+
+The lab sends the task and the live Solari `cdp_endpoint` to that server over HTTPS with an optional bearer token. The customer agent drives the browser through CDP and returns JSON such as:
+
+```json
+{"status":"success","message":"Task completed","steps":7,"claimed_success":true,"events":[]}
+```
+
+The CDP endpoint is a secret. It is never rendered in the dashboard, sent to the browser UI, or written to the report. Chaos injection, verification, classification, and persistence remain owned by the lab.
+
+The dashboard can also send a different `target_url` for an experiment. The current verifier and UI/session scenarios target the demo store contract; a customer website needs its own verifier contract that defines what success means for that application. Network interception is the most portable first scenario.
+
+### What is CDP?
+
+CDP is the Chrome DevTools Protocol, the browser control protocol used to inspect and drive a live Chromium session. Solari gives each browser session a private CDP endpoint. A customer agent uses that endpoint to connect to the exact browser session created by the lab. The endpoint stays server-side and is never shown in the dashboard.
+
+The target URL is the execution target, not automatically ground truth. The lab must never infer success from a generic button click or from the agent's final message.
+
 Experiment reports can be persisted in SQLite by setting `RUN_DB_PATH` (the FastAPI experiment endpoint defaults to `data/runs.db`). The stored report includes the classification, agent claim, verifier result, and event evidence.
 
 To run the FastAPI entry point:
 
 ```powershell
-uvicorn app.main:app --reload
+python -m app.server
 ```
 
 Then post a task to `POST /runs` with JSON such as:

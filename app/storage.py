@@ -45,3 +45,17 @@ def get_report(run_id: str, database_path: str) -> dict[str, Any] | None:
     with sqlite3.connect(database_path) as connection:
         row = connection.execute("SELECT report_json FROM runs WHERE id = ?", (run_id,)).fetchone()
     return json.loads(row[0]) if row else None
+
+
+def list_reports(database_path: str, limit: int = 12) -> list[dict[str, Any]]:
+    if not Path(database_path).exists():
+        return []
+    with sqlite3.connect(database_path) as connection:
+        rows = connection.execute(
+            "SELECT id, created_at, scenario, classification FROM runs ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [
+        {"id": row[0], "created_at": row[1], "scenario": row[2], "classification": row[3]}
+        for row in rows
+    ]

@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 
 from solari_browser import Solari
 
-from .adapters import AgentAdapter, LangGraphReferenceAdapter
+from .adapters import AgentAdapter, AgentContext, configured_agent
 from .chaos import inject_network_failure_once, inject_session_expiration, inject_ui_mutation
 from .storage import save_report
 from .verifier import verify_cart
@@ -20,13 +20,16 @@ TASK = "Find the cheapest laptop under ₹80,000 and add it to the cart."
 async def run_experiment(
     scenario: str = "none",
     agent: AgentAdapter | None = None,
+    target_url: str | None = None,
 ) -> dict[str, Any]:
     api_key = os.environ["SOLARI_API_KEY"]
-    demo_url = os.environ["DEMO_URL"]
+    demo_url = target_url or os.environ["DEMO_URL"]
     if not urlparse(demo_url).scheme:
         demo_url = f"https://{demo_url}"
+    if urlparse(demo_url).scheme not in {"http", "https"}:
+        raise ValueError("target_url must use http or https")
     events: list[dict[str, Any]] = []
-    agent = agent or LangGraphReferenceAdapter(
+    agent = agent or configured_agent(
         model=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"),
         max_steps=int(os.environ.get("MAX_STEPS", "12")),
     )
@@ -50,7 +53,7 @@ async def run_experiment(
                 await emit({"type": "chaos_scheduled", "data": {"scenario": scenario}})
                 await inject_session_expiration(page, emit)
 
-            result = await agent.run(TASK, page, emit)
+            result = await agent.run(AgentContext(TASK, page, browser.cdp_endpoint, demo_url), emit)
             verification = await verify_cart(page, "ThinkPad X1", 1)
             await emit({
                 "type": "verification_passed" if verification.passed else "verification_failed",
@@ -68,6 +71,7 @@ async def run_experiment(
     report = {
         "classification": classification,
         "scenario": scenario,
+        "target_url": demo_url,
         "agent": {
             "status": result.status,
             "claimed_success": result.claimed_success,
