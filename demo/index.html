@@ -131,21 +131,28 @@
       const cart = [];
 
       buttons.forEach((button) => {
-        button.addEventListener("click", () => {
+        button.addEventListener("click", async () => {
           const card = button.closest(".product");
           const product = card.querySelector("h2").textContent;
           const productId = card.dataset.productId;
-          const existing = cart.find((item) => item.productId === productId);
-          if (existing) {
-            existing.quantity += 1;
-          } else {
-            cart.push({ productId, product, quantity: 1 });
+          try {
+            const response = await fetch(`/cart-result.json?product=${productId}`);
+            if (!response.ok) throw new Error("cart request failed");
+            const result = await response.json();
+            const existing = cart.find((item) => item.productId === result.productId);
+            if (existing) {
+              existing.quantity += result.quantity;
+            } else {
+              cart.push(result);
+            }
+            const quantity = cart.reduce((total, item) => total + item.quantity, 0);
+            store.dataset.cartProduct = cart[0].product;
+            store.dataset.cartQuantity = quantity;
+            cartCount.textContent = quantity;
+            status.textContent = `${product} added to cart`;
+          } catch (error) {
+            status.textContent = "Cart update failed. Please retry.";
           }
-          const quantity = cart.reduce((total, item) => total + item.quantity, 0);
-          store.dataset.cartProduct = cart[0].product;
-          store.dataset.cartQuantity = quantity;
-          cartCount.textContent = quantity;
-          status.textContent = `${product} added to cart`;
         });
       });
     </script>
