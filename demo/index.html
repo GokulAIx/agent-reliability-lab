@@ -95,7 +95,7 @@
     </style>
   </head>
   <body>
-    <main>
+    <main id="store" data-cart-product="" data-cart-quantity="0">
       <header>
         <div>
           <p>Agent Reliability Lab target</p>
@@ -127,20 +127,24 @@
       const buttons = document.querySelectorAll(".product button");
       const status = document.querySelector('[role="status"]');
       const cartCount = document.querySelector("#cart-count");
-      window.__APP_STATE__ = { cart: [] };
+      const store = document.querySelector("#store");
+      const cart = [];
 
       buttons.forEach((button) => {
         button.addEventListener("click", () => {
           const card = button.closest(".product");
           const product = card.querySelector("h2").textContent;
           const productId = card.dataset.productId;
-          const existing = window.__APP_STATE__.cart.find((item) => item.productId === productId);
+          const existing = cart.find((item) => item.productId === productId);
           if (existing) {
             existing.quantity += 1;
           } else {
-            window.__APP_STATE__.cart.push({ productId, product, quantity: 1 });
+            cart.push({ productId, product, quantity: 1 });
           }
-          cartCount.textContent = window.__APP_STATE__.cart.reduce((total, item) => total + item.quantity, 0);
+          const quantity = cart.reduce((total, item) => total + item.quantity, 0);
+          store.dataset.cartProduct = cart[0].product;
+          store.dataset.cartQuantity = quantity;
+          cartCount.textContent = quantity;
           status.textContent = `${product} added to cart`;
         });
       });

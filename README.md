@@ -30,6 +30,46 @@ $env:DEMO_URL = "https://your-demo.vercel.app"
 python -m app.smoke
 ```
 
+## Run the LLM agent
+
+Once the updated demo is deployed, run the Gemini/LangGraph browser agent:
+
+```powershell
+.venv\Scripts\Activate.ps1
+python -m app.run_demo
+```
+
+The agent receives the natural-language task, observes the page, chooses browser tools, and iterates until it claims success or reaches `MAX_STEPS`. The independent verifier remains a separate component and is not used by the agent to decide whether it succeeded.
+
+## Run an experiment
+
+Run the baseline:
+
+```powershell
+.venv\Scripts\python.exe -m app.experiment
+```
+
+Run the first controlled UI mutation:
+
+```powershell
+$env:CHAOS_SCENARIO = "ui_mutation"
+.venv\Scripts\python.exe -m app.experiment
+```
+
+The report compares the agent claim with independent application state and classifies the run as `SUCCESS`, `RECOVERED`, `FAILURE`, `FALSE SUCCESS`, or `UNCERTAIN`.
+
+To run the FastAPI entry point:
+
+```powershell
+uvicorn app.main:app --reload
+```
+
+Then post a task to `POST /runs` with JSON such as:
+
+```json
+{"task":"Find the cheapest laptop under ₹80,000 and add it to the cart."}
+```
+
 Expected output:
 
 ```text

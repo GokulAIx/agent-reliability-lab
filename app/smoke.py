@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+from urllib.parse import urlparse
 
 from solari_browser import Solari
 
@@ -14,6 +15,8 @@ async def run_smoke_test() -> None:
         raise RuntimeError("SOLARI_API_KEY is required")
     if not demo_url:
         raise RuntimeError("DEMO_URL is required")
+    if not urlparse(demo_url).scheme:
+        demo_url = f"https://{demo_url}"
 
     async with Solari(api_key=api_key) as solari:
         async with await solari.launch() as browser:
